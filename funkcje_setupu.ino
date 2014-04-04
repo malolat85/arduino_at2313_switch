@@ -1,3 +1,4 @@
+/*
 void definiujWeWyj() {
   for (int i = 0; i < INPUT_SIZE; i++) { //ustaw piny wejsc
     pinMode(input_pins[i], INPUT);
@@ -11,28 +12,42 @@ void definiujWeWyj() {
   }
 
 }
-/*
+*/
 void definiujWeWyj() {
-  DDRD=B0000011;
-  DDRB=B11111;
-  DDRA=00;
-  PORTD=B11111;
-  PORTA=11;
-  
+  DDRD = B0000011;
+  PORTD = B1111100;
+  DDRB = B11111;
+  PORTB = B00000;
+  DDRA = 00;
+  PORTA = 11;
+
   for (int i = 0; i < INPUT_SIZE; i++) { //ustaw piny wejsc
     input[i] = digitalRead(input_pins[i]);
   }
 }
-*/
+
 
 void requestEvent()
 {
-    TinyWireS.send('x');
+  TinyWireS.send('x');
 }  // end of requestEvent
 
-/*
+
 void receiveEvent()
 {
-  //command = TinyWireS.send(command1);  // remember command for when we get request
+  if (TinyWireS.available()) {
+    byte command = TinyWireS.receive();  // remember command for when we get request
+    switch (command) {
+      case 'o':
+        for (int i = 0; i < OUTPUT_SIZE; i++) {
+          TinyWireS.send(output[i]);
+        }
+        break;
+      case 'w':
+        byte obw = TinyWireS.receive();
+        przelacz(obw);
+        break;
+    }
+  }
 } // end of receiveEvent
-*/
+
