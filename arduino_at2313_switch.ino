@@ -17,7 +17,7 @@
 
 //domyslna tablica stanow wejsc
 int input[] = {HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH};
-int input_pins[] = {WLACZNIK1,WLACZNIK2,WLACZNIK3,WLACZNIK4,WLACZNIK5,WLACZNIK6,WLACZNIK7};
+int input_pins[] = {WLACZNIK1, WLACZNIK2, WLACZNIK3, WLACZNIK4, WLACZNIK5, WLACZNIK6, WLACZNIK7};
 
 
 //definicje obwodow wyjsciowych
@@ -33,7 +33,7 @@ int input_pins[] = {WLACZNIK1,WLACZNIK2,WLACZNIK3,WLACZNIK4,WLACZNIK5,WLACZNIK6,
 
 //domyslna tablica stanow wyjsc
 int output[] = {LOW, LOW, LOW, LOW, LOW, LOW, LOW};
-int output_pins[] = {OBWOD1,OBWOD2,OBWOD3,OBWOD4,OBWOD5,OBWOD6,OBWOD7};
+int output_pins[] = {OBWOD1, OBWOD2, OBWOD3, OBWOD4, OBWOD5, OBWOD6, OBWOD7};
 
 
 
@@ -46,7 +46,7 @@ int output_pins[] = {OBWOD1,OBWOD2,OBWOD3,OBWOD4,OBWOD5,OBWOD6,OBWOD7};
 #define I2C_SLAVE_ADDR 0x16
 
 byte autonomiczny = 1;
-byte command,command1;
+byte command, command1;
 
 //===============================================================
 //              Setup
@@ -54,16 +54,15 @@ byte command,command1;
 
 void setup() {
   definiujWeWyj();
-  
+
   TinyWireS.begin(I2C_SLAVE_ADDR);
-  TinyWireS.send('x');
-//  TinyWireS.onReceive (receiveEvent);
-  TinyWireS.onRequest (requestEvent);
+  delay(1000);
+  // TinyWireS.send('y');
+
+  // TinyWireS.onReceive(receiveEvent);
+  //  TinyWireS.onRequest(requestEvent);
+
 }
-
-
-
-
 
 
 //===============================================================
@@ -74,35 +73,34 @@ void loop() {
 
   //sprawdz i2c - jeśli coś czeka to sprawdz komendy
   //jesli sa komendy to wykonaj
-/*  if (TinyWireS.available()) {
-    char komenda = TinyWireS.receive();
-    switch (komenda) {
-      case 'i':
-        char temp[INPUT_SIZE] = "";
-        for (int i = 0; i < INPUT_SIZE; i++) {
-          temp[i]= input[i];
-        }
-//        TinyWireS.
-        break;
-    }
-*/
-    checkInput();                        //sprawdzWejscia
-    //setOutput();                         //ustawWyjscia
-    //sprawdzCoDoZrobienia
 
-    delay(OPOZNIENIEPOJEDYNCZE);
-  
+
+  sprawdz_i2c();     //Sprawdz czy czekaja jakies komendy od mastera
+  checkInput();                        //sprawdzWejscia
+  //setOutput();                         //ustawWyjscia
+  //sprawdzCoDoZrobienia
+
+  delay(OPOZNIENIEPOJEDYNCZE);
+
 }
-
-
-
-
-
 
 //===============================================================
 //             Procedury i funkcje
 //===============================================================
 
+void sprawdz_i2c() {
+  byte command, ob;
+  if (TinyWireS.available()) command = TinyWireS.receive();
+  switch (command) {
+    case 'o':
+      if (TinyWireS.available()) {
+        ob = TinyWireS.receive();
+        przelacz(ob);
+      }
+      break;
+  }
+
+}
 
 void checkInput()                           //  Sprawdzenie czy zmienia sie stan wejsc
 {
@@ -116,10 +114,10 @@ void checkInput()                           //  Sprawdzenie czy zmienia sie stan
       ilosc = 1;
 
       if (!autonomiczny) {
-//        ilosc += sprawdzCzySeria(i);          //temp - tutaj liczymy ile razy nacisniety - do makr
-//        wyslij_ilosc_do_mastera(i,ilosc);
-//   tutaj trzeba wyslac komende do mastera
-//        TinyWireS.send(i); //tymczasowo
+        //        ilosc += sprawdzCzySeria(i);          //temp - tutaj liczymy ile razy nacisniety - do makr
+        //        wyslij_ilosc_do_mastera(i,ilosc);
+        //   tutaj trzeba wyslac komende do mastera
+        //        TinyWireS.send(i); //tymczasowo
 
       }
       else
@@ -127,19 +125,20 @@ void checkInput()                           //  Sprawdzenie czy zmienia sie stan
         przelacz(i);      //zmien stan w wersji autonimicznej
         delay(OPOZNIENIEPOJEDYNCZE);         //czekamy zeby przez stany nieustalone nie zgaslo nam swiatlo
       }
-      ilosc=0;
+      ilosc = 0;
     }
   }
 }
 
 
-byte wyslij_ilosc_do_mastera(int sw ,int ilosc){
+byte wyslij_ilosc_do_mastera(int sw , int ilosc) {
   byte komenda[3];
-  komenda[0]='i';
-  komenda[1]=sw;
-  komenda[2]=ilosc;
-  for(int i=0;i<3;i++){
-//    TinyWireS.send(komenda[i]);
+  komenda[0] = 'i';
+  komenda[1] = sw;
+  komenda[2] = ilosc;
+  for (int i = 0; i < 3; i++) {
+    //
+    TinyWireS.send(komenda[i]);
   }
 }
 
@@ -167,17 +166,9 @@ int sprawdzCzySeria(int obwod)
   return wynik;
 }
 
-/*cala funkcja do poprawy - przyda sie przy zdefiniowanych makrach - scenach
-void setOutput(){ // Zmiana stanu wyjsc
-  for (int i=0;i<OUTPUT_SIZE;i++){
-    digitalWrite(output_pins[i], output[i]);
-  }
-}
-*/
-
 void przelacz(int obwod)
 {
-  input[obwod] = 1-input[obwod];
+  input[obwod] = 1 - input[obwod];
   digitalWrite(output_pins[obwod], HIGH);
   delay(IMPULSPRZEKAZNIKA);         //czekamy zeby zaskoczyl przekaznik - dopasowa
   digitalWrite(output_pins[obwod], LOW);
