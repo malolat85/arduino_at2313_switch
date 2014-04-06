@@ -32,8 +32,8 @@ int input_pins[] = {WLACZNIK1, WLACZNIK2, WLACZNIK3, WLACZNIK4, WLACZNIK5, WLACZ
 #define OUTPUT_SIZE 7
 
 //domyslna tablica stanow wyjsc
-int output[] = {LOW, LOW, LOW, LOW, LOW, LOW, LOW};
-int output_pins[] = {OBWOD1, OBWOD2, OBWOD3, OBWOD4, OBWOD5, OBWOD6, OBWOD7};
+byte output[] = {LOW, LOW, LOW, LOW, LOW, LOW, LOW};
+byte output_pins[] = {OBWOD1, OBWOD2, OBWOD3, OBWOD4, OBWOD5, OBWOD6, OBWOD7};
 
 
 
@@ -54,14 +54,9 @@ byte command, command1;
 
 void setup() {
   definiujWeWyj();
-
   TinyWireS.begin(I2C_SLAVE_ADDR);
-  delay(1000);
-  // TinyWireS.send('y');
-
-  // TinyWireS.onReceive(receiveEvent);
-  //  TinyWireS.onRequest(requestEvent);
-
+  delay(300);
+ 
 }
 
 
@@ -71,16 +66,10 @@ void setup() {
 
 void loop() {
 
-  //sprawdz i2c - jeśli coś czeka to sprawdz komendy
-  //jesli sa komendy to wykonaj
-
-
   sprawdz_i2c();     //Sprawdz czy czekaja jakies komendy od mastera
   checkInput();                        //sprawdzWejscia
-  //setOutput();                         //ustawWyjscia
   //sprawdzCoDoZrobienia
-
-  delay(OPOZNIENIEPOJEDYNCZE);
+//  delay(OPOZNIENIEPOJEDYNCZE);
 
 }
 
@@ -89,41 +78,45 @@ void loop() {
 //===============================================================
 
 void sprawdz_i2c() {
-  byte command, ob;
+  byte command;
+
   if (TinyWireS.available()) command = TinyWireS.receive();
-  switch (command) {
+  switch (command) 
+  {
     case 'o':
       if (TinyWireS.available()) {
-        ob = TinyWireS.receive();
-        przelacz(ob);
+        command = TinyWireS.receive();
+        przelacz(command);
       }
       break;
+    /*  
+    case 'g':
+      for (byte i = 0; i < OUTPUT_SIZE; i++) TinyWireS.send(output[i]);
+      break;
+      */
   }
-
 }
 
 void checkInput()                           //  Sprawdzenie czy zmienia sie stan wejsc
 {
-  int val;
-  int ilosc = 0;
-  for (int i = 0; i < INPUT_SIZE; i++) {   //po kolei przez wszystkie wejscia
-
+  byte val,ilosc=0;
+  
+  for (byte i = 0; i < INPUT_SIZE; i++) {   //po kolei przez wszystkie wejscia
     val = digitalRead(input_pins[i]);
-
     if (val != input[i]) {                 //zostal nacisniety jakis przycisk
       ilosc = 1;
-
-      if (!autonomiczny) {
-        //        ilosc += sprawdzCzySeria(i);          //temp - tutaj liczymy ile razy nacisniety - do makr
-        //        wyslij_ilosc_do_mastera(i,ilosc);
-        //   tutaj trzeba wyslac komende do mastera
-        //        TinyWireS.send(i); //tymczasowo
-
+      if (autonomiczny) {
+        przelacz(i);      //zmien stan w wersji autonimicznej
+        delay(OPOZNIENIEPOJEDYNCZE);         //czekamy zeby przez stany nieustalone nie zgaslo nam swiatlo
+        input[i] = 1 - input[i];
+       // wyslij_ilosc_do_mastera(i, ilosc);
       }
       else
       {
-        przelacz(i);      //zmien stan w wersji autonimicznej
-        delay(OPOZNIENIEPOJEDYNCZE);         //czekamy zeby przez stany nieustalone nie zgaslo nam swiatlo
+       // ilosc += sprawdzCzySeria(i);          //temp - tutaj liczymy ile razy nacisniety - do makr
+                wyslij_ilosc_do_mastera(i,ilosc);
+        //   tutaj trzeba wyslac komende do mastera
+        //        TinyWireS.send(i); //tymczasowo
       }
       ilosc = 0;
     }
@@ -132,24 +125,29 @@ void checkInput()                           //  Sprawdzenie czy zmienia sie stan
 
 
 byte wyslij_ilosc_do_mastera(int sw , int ilosc) {
-  byte komenda[3];
-  komenda[0] = 'i';
-  komenda[1] = sw;
-  komenda[2] = ilosc;
-  for (int i = 0; i < 3; i++) {
-    //
-    TinyWireS.send(komenda[i]);
-  }
+    TinyWireS.send(sw);
+    TinyWireS.send(ilosc);
 }
+
+void przelacz(int a)
+{
+  output[a] = 1 - output[a];
+  digitalWrite(output_pins[a], HIGH);
+  delay(IMPULSPRZEKAZNIKA);         //czekamy zeby zaskoczyl przekaznik - dopasowa
+  digitalWrite(output_pins[a], LOW);
+//  delay(OPOZNIENIEPOJEDYNCZE);
+}
+
+
 
 // trzeba poprawic ta funkcje pod przelaczniki stabilne
 int sprawdzCzySeria(int obwod)
 {
-  int wynik = 0;
-  int val;
+  byte wynik = 0;
+  byte val;
   delay(OPOZNIENIEPOJEDYNCZE);
 
-  int koniec = millis() + OPOZNIENIEPOJEDYNCZE;
+  byte koniec = millis() + OPOZNIENIEPOJEDYNCZE;
 
   //tu gdzies jest blad i sie zawiesza - nie przerywa petli while
   // up1 - powinno byc lepiej, poprawiony blad z zerowaniem zm. temp
@@ -158,21 +156,13 @@ int sprawdzCzySeria(int obwod)
   {
 
     val = digitalRead(input_pins[obwod]);
-    if (val == LOW) {
+    if (val != input[obwod]) {                 //zostal nacisniety jakis przycisk
       wynik++;
+      input[obwod]=1-input[obwod];
       if (wynik <= 7) wynik += sprawdzCzySeria(obwod);
     }
   }
   return wynik;
-}
-
-void przelacz(int obwod)
-{
-  input[obwod] = 1 - input[obwod];
-  digitalWrite(output_pins[obwod], HIGH);
-  delay(IMPULSPRZEKAZNIKA);         //czekamy zeby zaskoczyl przekaznik - dopasowa
-  digitalWrite(output_pins[obwod], LOW);
-
 }
 
 

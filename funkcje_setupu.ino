@@ -1,4 +1,4 @@
-
+/*
 void definiujWeWyj() {
   for (int i = 0; i < INPUT_SIZE; i++) { //ustaw piny wejsc
     pinMode(input_pins[i], INPUT);
@@ -9,24 +9,11 @@ void definiujWeWyj() {
   //ustaw piny wyjsc
   for (int i = 0; i < OUTPUT_SIZE; i++) {
     pinMode(output_pins[i], OUTPUT);
+    output[i] = digitalRead(output_pins[i]);
   }
 
 }
 /*
-void definiujWeWyj() {
-  DDRD = B0000011;
-  PORTD = B1111100;
-  DDRB = B11111;
-  PORTB = B00000;
-  DDRA = 00;
-  PORTA = 11;
-
-  for (int i = 0; i < INPUT_SIZE; i++) { //ustaw piny wejsc
-    input[i] = digitalRead(input_pins[i]);
-  }
-}
-
-
 void receiveEvent(uint8_t howMany){
 char kom;
   if (TinyWireS.available())
@@ -38,8 +25,7 @@ char kom;
     }
     //        TinyWireS.
  }
-
-/*
+ 
 void requestEvent()
 {
   for (int i = 0; i < OUTPUT_SIZE; i++) {
@@ -48,8 +34,25 @@ void requestEvent()
       TinyWireS.send('n');
     }
     else TinyWireS.send('f');
-    delay(30);
+    delay(100);
   }  // end of requestEvent1
+  
 }
 */
+
+void definiujWeWyj() {
+  DDRD = 0b1100000;
+  PORTD = 0b0011111;
+  DDRB = 0b11111111;
+  PORTB = 0b00000000;
+  DDRA = 0b00;
+  PORTA = 0b11;
+
+  for (int i = 0; i < INPUT_SIZE; i++) { //ustaw piny wejsc
+    input[i] = digitalRead(input_pins[i]);
+ 
+  }
+}
+
+
 
